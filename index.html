@@ -48,7 +48,7 @@
         }
         var map = L.map('map', {
             zoomControl:false, maxZoom:28, minZoom:1, preferCanvas: true
-        }).fitBounds([[50.74504524514203,4.187574827365967],[50.914337556201794,4.532376706620944]]);
+        }).fitBounds([[50.828,4.330],[50.868,4.400]]);
         var hash = new L.Hash(map);
         map.attributionControl.setPrefix('<a href="https://github.com/qgis2web/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
         var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
@@ -303,7 +303,7 @@
         // Facteur d'échelle des cercles (1 = échelle géographique réelle, ajustable via le curseur plus bas)
         var circleAreaFactor = 1;
         // Opacité courante des couches Carte bureaux (contrôlée par le curseur de transparence)
-        var circleOpacity = 1;
+        var circleOpacity = 0.7;
         function style_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_0(feature) {
             var superficie = feature.properties['Superficie'];
             // Rayon en MÈTRES : aire du cercle = Superficie (m²) × circleAreaFactor.
@@ -505,8 +505,11 @@
         ];
         categoryLayers_Cartebureaux.forEach(function (lyr) {
             bounds_group.addLayer(lyr);
-            map.addLayer(lyr);
         });
+        // Par défaut, seule "Superficie de bureaux" (Stock + Vacance commercialisée) est active ;
+        // les catégories de Reconversions restent décochées jusqu'à ce qu'on les sélectionne dans la légende.
+        map.addLayer(layer_Cartebureaux_BureauxBleus);
+        map.addLayer(layer_Cartebureaux_BureauxRoses);
         function pop_LignesbureauxEPSG4326_4(feature, layer) {
             layer.on({
                 mouseout: function(e) {
@@ -652,7 +655,7 @@
             {label: "Positron (retina)", layer: layer_Positronretina_0},
             {label: "Orthophoto récente (UrbIS)", layer: layer_OrthophotoBrussels},
         ];
-        map.addLayer(layer_OSMStandard_1);
+        map.addLayer(layer_Positronretina_0);
 
         var overlaysTree = [
             {label: '<img src="legend/LignesbureauxEPSG4326_4_Ensemblesdebureaux0.png" /> Ensembles de bureaux', layer: layer_LignesbureauxEPSG4326_4},
@@ -781,7 +784,7 @@
             div.style.width = '170px';
             div.innerHTML =
                 '<div style="font-weight:600;margin-bottom:4px;">Transparence — Carte bureaux 2022-2023</div>' +
-                '<input type="range" min="0" max="100" value="100" style="width:100%;" id="opacitySliderCartebureaux">';
+                '<input type="range" min="0" max="100" value="70" style="width:100%;" id="opacitySliderCartebureaux">';
             L.DomEvent.disableClickPropagation(div);
             L.DomEvent.disableScrollPropagation(div);
             return div;
