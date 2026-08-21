@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet.photon.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.photon.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="data/LimitescommunalesRBC_2.js"></script>
+        <script src="data/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3.js"></script>
+        <script src="data/LignesbureauxEPSG4326_4.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1, preferCanvas: true
+        }).fitBounds([[50.74504524514203,4.187574827365967],[50.914337556201794,4.532376706620944]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/qgis2web/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // modify popup if contains media
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var imgTd = tempDiv.querySelector('td img');
+            if (imgTd) {
+                var src = imgTd.getAttribute('src');
+                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
+                    var audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = src;
+                    imgTd.parentNode.replaceChild(audio, imgTd);
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
+                    var video = document.createElement('video');
+                    video.controls = true;
+                    video.src = src;
+                    video.style.width = "400px";
+                    video.style.height = "300px";
+                    video.style.maxHeight = "60vh";
+                    video.style.maxWidth = "60vw";
+                    imgTd.parentNode.replaceChild(video, imgTd);
+                    popup._contentNode.classList.add('media');
+                    // Aggiorna il popup quando il video carica i metadati
+                    video.addEventListener('loadedmetadata', function() {
+                        popup.update();
+                    });
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else {
+                    popup._contentNode.classList.remove('media');
+                }
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_Positronretina_0');
+        map.getPane('pane_Positronretina_0').style.zIndex = 400;
+        var layer_Positronretina_0 = L.tileLayer('https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png', {
+            pane: 'pane_Positronretina_0',
+            opacity: 1.0,
+            attribution: '<a href="https://cartodb.com/basemaps/">Map tiles by CartoDB, under CC BY 4.0. Data by OpenStreetMap, under ODbL.</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_Positronretina_0;
+        map.createPane('pane_OSMStandard_1');
+        map.getPane('pane_OSMStandard_1').style.zIndex = 401;
+        var layer_OSMStandard_1 = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            pane: 'pane_OSMStandard_1',
+            opacity: 1.0,
+            subdomains: 'abcd',
+            attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>, © <a href="https://carto.com/attributions">CARTO</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_OSMStandard_1;
+        function pop_LimitescommunalesRBC_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID'] !== null ? autolinker.link(String(feature.properties['ID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['VERSIONID'] !== null ? autolinker.link(String(feature.properties['VERSIONID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME_FRE'] !== null ? autolinker.link(String(feature.properties['NAME_FRE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SHORT_FRE'] !== null ? autolinker.link(String(feature.properties['SHORT_FRE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAME_DUT'] !== null ? autolinker.link(String(feature.properties['NAME_DUT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SHORT_DUT'] !== null ? autolinker.link(String(feature.properties['SHORT_DUT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MU3C'] !== null ? autolinker.link(String(feature.properties['MU3C']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['POL_ID'] !== null ? autolinker.link(String(feature.properties['POL_ID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['COUNTRY'] !== null ? autolinker.link(String(feature.properties['COUNTRY']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAT_CODE'] !== null ? autolinker.link(String(feature.properties['NAT_CODE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NAT_LEVEL'] !== null ? autolinker.link(String(feature.properties['NAT_LEVEL']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['AREA'] !== null ? autolinker.link(String(feature.properties['AREA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['LEGAL_STAT'] !== null ? autolinker.link(String(feature.properties['LEGAL_STAT']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['INSPIRE_ID'] !== null ? autolinker.link(String(feature.properties['INSPIRE_ID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['BEGIN_LIFE'] !== null ? autolinker.link(String(feature.properties['BEGIN_LIFE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['END_LIFE'] !== null ? autolinker.link(String(feature.properties['END_LIFE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_LimitescommunalesRBC_2_0() {
+            return {
+                pane: 'pane_LimitescommunalesRBC_2',
+                opacity: 1,
+                color: 'rgba(228,26,28,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 1.0,
+                fillOpacity: 0,
+                interactive: false,
+            }
+        }
+        map.createPane('pane_LimitescommunalesRBC_2');
+        map.getPane('pane_LimitescommunalesRBC_2').style.zIndex = 402;
+        map.getPane('pane_LimitescommunalesRBC_2').style['mix-blend-mode'] = 'normal';
+        var layer_LimitescommunalesRBC_2 = new L.geoJson(json_LimitescommunalesRBC_2, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_LimitescommunalesRBC_2',
+            layerName: 'layer_LimitescommunalesRBC_2',
+            pane: 'pane_LimitescommunalesRBC_2',
+            onEachFeature: pop_LimitescommunalesRBC_2,
+            style: style_LimitescommunalesRBC_2_0,
+        });
+        bounds_group.addLayer(layer_LimitescommunalesRBC_2);
+        map.addLayer(layer_LimitescommunalesRBC_2);
+        function pop_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(String(feature.properties['fid']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Layer'] !== null ? autolinker.link(String(feature.properties['Layer']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['PaperSpace'] !== null ? autolinker.link(String(feature.properties['PaperSpace']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SubClasses'] !== null ? autolinker.link(String(feature.properties['SubClasses']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Linetype'] !== null ? autolinker.link(String(feature.properties['Linetype']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['EntityHandle'] !== null ? autolinker.link(String(feature.properties['EntityHandle']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Text'] !== null ? autolinker.link(String(feature.properties['Text']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Superficie'] !== null ? autolinker.link(String(feature.properties['Superficie']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Commentaire'] !== null ? autolinker.link(String(feature.properties['Commentaire']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        // Facteur d'échelle des cercles (1 = échelle géographique réelle, ajustable via le curseur plus bas)
+        var circleAreaFactor = 1;
+        // Opacité courante des couches Carte bureaux (contrôlée par le curseur de transparence)
+        var circleOpacity = 1;
+        function style_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_0(feature) {
+            var superficie = feature.properties['Superficie'];
+            // Rayon en MÈTRES : aire du cercle = Superficie (m²) × circleAreaFactor.
+            var radius = (superficie !== null && !isNaN(superficie) && superficie > 0) ? Math.sqrt(superficie * circleAreaFactor / Math.PI) : Math.sqrt(circleAreaFactor / Math.PI);
+            switch(String(feature.properties['Layer'])) {
+                case 'Bureaux bleus':
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(131,216,255,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Bureaux roses':
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(254,199,206,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Reconversions 1997-2022 Ambassade':
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(127,207,214,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Reconversions 1997-2022 Autre':
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(125,125,125,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Reconversions 1997-2022 Commerce':
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(249,113,229,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Reconversions 1997-2022 Equipement':
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(31,120,180,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Reconversions 1997-2022 Logement':
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(232,51,30,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Reconversions 1997-2022 TOTAL':
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(82,30,212,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'Reconversions lÃ©gende':
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(211,60,46,1.0)',
+                interactive: true,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                radius: radius,
+                opacity: circleOpacity,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: circleOpacity,
+                fillColor: 'rgba(230,59,147,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3');
+        map.getPane('pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3').style.zIndex = 403;
+        map.getPane('pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3').style['mix-blend-mode'] = 'normal';
+        function makeCategoryLayer_Cartebureaux(categoryValue, layerVarName) {
+            return new L.geoJson(json_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3, {
+                attribution: '',
+                interactive: true,
+                dataVar: 'json_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                layerName: layerVarName,
+                pane: 'pane_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3',
+                onEachFeature: pop_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3,
+                filter: function (feature) {
+                    return String(feature.properties['Layer']) === categoryValue;
+                },
+                pointToLayer: function (feature, latlng) {
+                    return L.circle(latlng, style_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_0(feature));
+                },
+            });
+        }
+        var layer_Cartebureaux_BureauxBleus = makeCategoryLayer_Cartebureaux('Bureaux bleus', 'layer_Cartebureaux_BureauxBleus');
+        var layer_Cartebureaux_BureauxRoses = makeCategoryLayer_Cartebureaux('Bureaux roses', 'layer_Cartebureaux_BureauxRoses');
+        var layer_Cartebureaux_ReconvAmbassade = makeCategoryLayer_Cartebureaux('Reconversions 1997-2022 Ambassade', 'layer_Cartebureaux_ReconvAmbassade');
+        var layer_Cartebureaux_ReconvAutre = makeCategoryLayer_Cartebureaux('Reconversions 1997-2022 Autre', 'layer_Cartebureaux_ReconvAutre');
+        var layer_Cartebureaux_ReconvCommerce = makeCategoryLayer_Cartebureaux('Reconversions 1997-2022 Commerce', 'layer_Cartebureaux_ReconvCommerce');
+        var layer_Cartebureaux_ReconvEquipement = makeCategoryLayer_Cartebureaux('Reconversions 1997-2022 Equipement', 'layer_Cartebureaux_ReconvEquipement');
+        var layer_Cartebureaux_ReconvLogement = makeCategoryLayer_Cartebureaux('Reconversions 1997-2022 Logement', 'layer_Cartebureaux_ReconvLogement');
+        var categoryLayers_Cartebureaux = [
+            layer_Cartebureaux_BureauxBleus, layer_Cartebureaux_BureauxRoses,
+            layer_Cartebureaux_ReconvAmbassade, layer_Cartebureaux_ReconvAutre,
+            layer_Cartebureaux_ReconvCommerce, layer_Cartebureaux_ReconvEquipement,
+            layer_Cartebureaux_ReconvLogement
+        ];
+        categoryLayers_Cartebureaux.forEach(function (lyr) {
+            bounds_group.addLayer(lyr);
+            map.addLayer(lyr);
+        });
+        function pop_LignesbureauxEPSG4326_4(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Layer'] !== null ? autolinker.link(String(feature.properties['Layer']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['PaperSpace'] !== null ? autolinker.link(String(feature.properties['PaperSpace']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SubClasses'] !== null ? autolinker.link(String(feature.properties['SubClasses']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Linetype'] !== null ? autolinker.link(String(feature.properties['Linetype']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['EntityHand'] !== null ? autolinker.link(String(feature.properties['EntityHand']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Text'] !== null ? autolinker.link(String(feature.properties['Text']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_LignesbureauxEPSG4326_4_0(feature) {
+            return {
+                pane: 'pane_LignesbureauxEPSG4326_4',
+                opacity: 1,
+                color: 'rgba(72,123,182,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 3.0,
+                fillOpacity: 0,
+                interactive: true,
+            };
+        }
+        map.createPane('pane_LignesbureauxEPSG4326_4');
+        map.getPane('pane_LignesbureauxEPSG4326_4').style.zIndex = 404;
+        map.getPane('pane_LignesbureauxEPSG4326_4').style['mix-blend-mode'] = 'normal';
+        var layer_LignesbureauxEPSG4326_4 = new L.geoJson(json_LignesbureauxEPSG4326_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_LignesbureauxEPSG4326_4',
+            layerName: 'layer_LignesbureauxEPSG4326_4',
+            pane: 'pane_LignesbureauxEPSG4326_4',
+            onEachFeature: pop_LignesbureauxEPSG4326_4,
+            filter: function (feature) {
+                return String(feature.properties['Layer']) === 'Ensembles de bureaux';
+            },
+            style: style_LignesbureauxEPSG4326_4_0,
+        });
+        bounds_group.addLayer(layer_LignesbureauxEPSG4326_4);
+        map.addLayer(layer_LignesbureauxEPSG4326_4);
+        const url = {"Nominatim OSM": "https://nominatim.openstreetmap.org/search?format=geojson&addressdetails=1&",
+        "France BAN": "https://api-adresse.data.gouv.fr/search/?"}
+        var photonControl = L.control.photon({
+            url: url["Nominatim OSM"],
+            feedbackLabel: '',
+            position: 'topleft',
+            includePosition: true,
+            initial: true,
+            // resultsHandler: myHandler,
+        }).addTo(map);
+        photonControl._container.childNodes[0].style.borderRadius="10px"
+        // Create a variable to store the geoJSON data
+        var x = null;
+        // Create a variable to store the marker
+        var marker = null;
+        // Add an event listener to the Photon control to create a marker from the returned geoJSON data
+        var z = null;
+        photonControl.on('selected', function(e) {
+            console.log(photonControl.search.resultsContainer);
+            if (x != null) {
+                map.removeLayer(obj3.marker);
+                map.removeLayer(x);
+            }
+            obj2.gcd = e.choice;
+            x = L.geoJSON(obj2.gcd).addTo(map);
+            var label = typeof obj2.gcd.properties.label === 'undefined' ? obj2.gcd.properties.display_name : obj2.gcd.properties.label;
+            obj3.marker = L.marker(x.getLayers()[0].getLatLng()).bindPopup(label).addTo(map);
+            map.setView(x.getLayers()[0].getLatLng(), 17);
+            z = typeof e.choice.properties.label === 'undefined'? e.choice.properties.display_name : e.choice.properties.label;
+            console.log(e);
+            e.target.input.value = z;
+        });
+        var search = document.getElementsByClassName("leaflet-photon leaflet-control")[0];
+        search.classList.add("leaflet-control-search")
+        search.style.display = "flex";
+        search.style.backgroundColor="rgba(255,255,255,0.5)" 
+
+        // Create the new button element
+        var button = document.createElement("div");
+        button.id = "gcd-button-control";
+        button.className = "gcd-gl-btn fa fa-search search-button";
+
+        // Insert the button at the beginning of the search control
+        search.insertBefore(button, search.firstChild);
+        last = search.lastChild;
+        last.style.display = "none";
+        button.addEventListener("click", function (e) {
+            if (last.style.display === "none") {
+                last.style.display = "block";
+            } else {
+                last.style.display = "none";
+            }
+        });
+        // Orthophoto récente de la Région bruxelloise (UrbIS, service Paradigm.brussels,
+        // WMTS public CC-0). La couche "Ortho" pointe toujours vers le dernier millésime
+        // disponible (2024 actuellement). Note : construit à partir du schéma d'URL REST
+        // documenté par ce service (bug connu : le segment {style} doit être omis).
+        var OrthoBrusselsTileLayer = L.TileLayer.extend({
+            getTileUrl: function (coords) {
+                return 'https://geoservices-grid.irisnet.be/geowebcache/service/wmts/rest/Ortho/EPSG:900913/EPSG:900913:' + coords.z + '/' + coords.y + '/' + coords.x + '?format=image/png';
+            }
+        });
+        var layer_OrthophotoBrussels = new OrthoBrusselsTileLayer('', {
+            attribution: 'Orthophoto UrbIS © urban.brussels / Paradigm.brussels (CC0)',
+            minZoom: 1,
+            maxZoom: 20,
+            minNativeZoom: 8,
+            maxNativeZoom: 20,
+        });
+
+        var baseTree = [
+            {label: "OSM Standard", layer: layer_OSMStandard_1},
+            {label: "Positron (retina)", layer: layer_Positronretina_0},
+            {label: "Orthophoto récente (UrbIS)", layer: layer_OrthophotoBrussels},
+        ];
+        map.addLayer(layer_OSMStandard_1);
+
+        var overlaysTree = [
+            {label: '<img src="legend/LignesbureauxEPSG4326_4_Ensemblesdebureaux0.png" /> Ensembles de bureaux', layer: layer_LignesbureauxEPSG4326_4},
+            {label: 'Parc de bureaux en 2022/2023 et reconversions de bureaux autorisés entre 1997 et 2022', selectAllCheckbox: true, children: [
+                {label: 'Superficie de bureaux', selectAllCheckbox: true, children: [
+                    {label: '<img src="legend/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_Bureauxbleus0.png" /> Stock', layer: layer_Cartebureaux_BureauxBleus},
+                    {label: '<img src="legend/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_Bureauxroses1.png" /> Vacance commercialisée', layer: layer_Cartebureaux_BureauxRoses},
+                ]},
+                {label: 'Reconversions 1997-2022', selectAllCheckbox: true, children: [
+                    {label: '<img src="legend/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_Reconversions19972022Logement6.png" /> Logement', layer: layer_Cartebureaux_ReconvLogement},
+                    {label: '<img src="legend/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_Reconversions19972022Equipement5.png" /> Equipement', layer: layer_Cartebureaux_ReconvEquipement},
+                    {label: '<img src="legend/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_Reconversions19972022Commerce4.png" /> Commerce', layer: layer_Cartebureaux_ReconvCommerce},
+                    {label: '<img src="legend/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_Reconversions19972022Ambassade2.png" /> Ambassade', layer: layer_Cartebureaux_ReconvAmbassade},
+                    {label: '<img src="legend/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_Reconversions19972022Autre3.png" /> Autre', layer: layer_Cartebureaux_ReconvAutre},
+                ]},
+            ]},
+            {label: '<img src="legend/LimitescommunalesRBC_2.png" /> Limites communales RBC', layer: layer_LimitescommunalesRBC_2},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: false, 
+        });
+        lay.addTo(map);
+
+        // Sélecteur de fonds de carte, ajouté APRÈS le contrôle de couches ci-dessus :
+        // comme les deux contrôles partagent la même position, Leaflet les empile dans
+        // l'ordre d'ajout, donc celui-ci apparaît en dessous (= "fonds de carte en fin de légende").
+        var layBase = L.control.layers.tree(baseTree, null, {
+            collapsed: false,
+        });
+        layBase.addTo(map);
+
+        // --- Légendes à cercles proportionnels (échelle géographique réelle) ---
+        // Les cercles sont dessinés en mètres sur le terrain (aire = Superficie),
+        // donc leur taille à l'écran change avec le zoom. Ces légendes recalculent
+        // leur taille en pixels à chaque changement de zoom/déplacement pour rester
+        // synchronisées avec ce qui est réellement affiché sur la carte.
+
+        function metersPerPixelAt(map) {
+            var lat = map.getCenter().lat;
+            var zoom = map.getZoom();
+            return 156543.03392 * Math.cos(lat * Math.PI / 180) / Math.pow(2, zoom);
+        }
+
+        function buildCircleLegendSVG(title, refValues, mpp) {
+            var radiiPx = refValues.map(function (v) {
+                var radiusMeters = Math.sqrt(v * circleAreaFactor / Math.PI);
+                return radiusMeters / mpp;
+            });
+            var gap = 14;
+            var maxR = Math.max.apply(null, radiiPx.concat([2]));
+            var svgHeight = maxR * 2 + 22;
+            var svgWidth = radiiPx.reduce(function (acc, r) { return acc + Math.max(r, 2) * 2 + gap; }, gap);
+
+            var html = '<div style="font-weight:600;margin-bottom:4px;">' + title + '</div>';
+            html += '<svg width="' + svgWidth + '" height="' + svgHeight + '">';
+            var xCursor = gap / 2;
+            refValues.forEach(function (val, i) {
+                var r = Math.max(radiiPx[i], 1);
+                var cx = xCursor + r;
+                var cy = svgHeight - r - 12;
+                html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="#333" stroke-width="1"/>';
+                html += '<text x="' + cx + '" y="' + (svgHeight - 2) + '" font-size="9" text-anchor="middle" fill="#222">' + val.toLocaleString('fr-BE') + '</text>';
+                xCursor += r * 2 + gap;
+            });
+            html += '</svg>';
+            return html;
+        }
+
+        var legendRefValuesBureaux = [10, 100, 1000];        // m², calibré sur Bureaux bleus/roses
+        var legendRefValuesReconv = [100, 1000, 10000];      // m², calibré sur Reconversions (hors valeurs CAD atypiques)
+
+        var legendBureaux = L.control({position: 'bottomleft'});
+        legendBureaux.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'legend-superficie legend-bureaux');
+            div.style.background = 'white';
+            div.style.padding = '8px 10px';
+            div.style.borderRadius = '4px';
+            div.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
+            div.style.fontSize = '11px';
+            div.style.lineHeight = '1.3';
+            div.style.marginBottom = '6px';
+            L.DomEvent.disableClickPropagation(div);
+            return div;
+        };
+        legendBureaux.addTo(map);
+
+        var legendReconv = L.control({position: 'bottomleft'});
+        legendReconv.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'legend-superficie legend-reconv');
+            div.style.background = 'white';
+            div.style.padding = '8px 10px';
+            div.style.borderRadius = '4px';
+            div.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
+            div.style.fontSize = '11px';
+            div.style.lineHeight = '1.3';
+            L.DomEvent.disableClickPropagation(div);
+            return div;
+        };
+        legendReconv.addTo(map);
+
+        function updateProportionalLegends() {
+            var mpp = metersPerPixelAt(map);
+            var bureauxDiv = document.querySelector('.legend-bureaux');
+            var reconvDiv = document.querySelector('.legend-reconv');
+            if (bureauxDiv) bureauxDiv.innerHTML = buildCircleLegendSVG('Bureaux — Superficie (m²)', legendRefValuesBureaux, mpp);
+            if (reconvDiv) reconvDiv.innerHTML = buildCircleLegendSVG('Reconversions — Superficie (m²)', legendRefValuesReconv, mpp);
+        }
+        map.on('zoomend moveend', updateProportionalLegends);
+        map.whenReady(updateProportionalLegends);
+
+        // --- Curseur de transparence pour les couches "Carte bureaux 2022_2023" ---
+        var opacityControl = L.control({position: 'bottomright'});
+        opacityControl.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'opacity-control-cartebureaux');
+            div.style.background = 'white';
+            div.style.padding = '8px 10px';
+            div.style.borderRadius = '4px';
+            div.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
+            div.style.fontSize = '11px';
+            div.style.lineHeight = '1.3';
+            div.style.width = '170px';
+            div.innerHTML =
+                '<div style="font-weight:600;margin-bottom:4px;">Transparence — Carte bureaux 2022-2023</div>' +
+                '<input type="range" min="0" max="100" value="100" style="width:100%;" id="opacitySliderCartebureaux">';
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
+            return div;
+        };
+        opacityControl.addTo(map);
+
+        document.getElementById('opacitySliderCartebureaux').addEventListener('input', function (e) {
+            circleOpacity = parseInt(e.target.value, 10) / 100;
+            categoryLayers_Cartebureaux.forEach(function (lyr) {
+                lyr.eachLayer(function (child) {
+                    child.setStyle({fillOpacity: circleOpacity, opacity: circleOpacity});
+                });
+            });
+        });
+
+        // --- Curseur d'échelle des cercles (facteur d'aire, log de 0.001x à 1x = échelle réelle) ---
+        var scaleControl = L.control({position: 'bottomright'});
+        scaleControl.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'scale-control-cartebureaux');
+            div.style.background = 'white';
+            div.style.padding = '8px 10px';
+            div.style.borderRadius = '4px';
+            div.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
+            div.style.fontSize = '11px';
+            div.style.lineHeight = '1.3';
+            div.style.width = '190px';
+            div.innerHTML =
+                '<div style="font-weight:600;margin-bottom:4px;">Taille des cercles</div>' +
+                '<input type="range" min="0" max="100" value="100" style="width:100%;" id="scaleSliderCartebureaux">' +
+                '<div id="scaleSliderReadout" style="margin-top:3px;color:#444;">10 000 m² → 10 000 m² (échelle réelle)</div>';
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
+            return div;
+        };
+        scaleControl.addTo(map);
+
+        // Régénère complètement les cercles à partir des données sources : plus fiable qu'une
+        // simple mutation de rayon (setRadius peut ne pas se répercuter visuellement selon le
+        // moteur de rendu). clearLayers() + addData() réapplique filter/pointToLayer/style
+        // (donc le circleAreaFactor et circleOpacity courants) sur les mêmes objets de couche,
+        // ce qui garde les cases à cocher de la légende valides (même référence d'objet).
+        function rebuildCartebureauxCircles() {
+            categoryLayers_Cartebureaux.forEach(function (lyr) {
+                lyr.clearLayers();
+                lyr.addData(json_Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3);
+            });
+        }
+
+        var scaleRebuildTimeout = null;
+        document.getElementById('scaleSliderCartebureaux').addEventListener('input', function (e) {
+            var sliderVal = parseInt(e.target.value, 10); // 0 à 100
+            // Mapping logarithmique : 0 → facteur 0.001 (cercles ~31x plus petits en rayon), 100 → facteur 1 (échelle réelle)
+            circleAreaFactor = Math.pow(10, -3 + (sliderVal / 100) * 3);
+
+            // Retour visuel immédiat (léger) : texte + légende
+            updateProportionalLegends();
+            var exempleAffiche = Math.round(10000 * circleAreaFactor);
+            var readout = document.getElementById('scaleSliderReadout');
+            if (readout) {
+                readout.textContent = '10 000 m² → ' + exempleAffiche.toLocaleString('fr-BE') + ' m²' + (circleAreaFactor >= 0.999 ? ' (échelle réelle)' : ' affichés');
+            }
+
+            // Reconstruction des cercles sur la carte (un peu plus coûteuse) : différée légèrement
+            // pour rester fluide pendant qu'on glisse le curseur.
+            clearTimeout(scaleRebuildTimeout);
+            scaleRebuildTimeout = setTimeout(rebuildCartebureauxCircles, 120);
+        });
+		document.addEventListener("DOMContentLoaded", function() {
+            // set new Layers List height which considers toggle icon
+            function newLayersListHeight() {
+                var layerScrollbarElement = document.querySelector('.leaflet-control-layers-scrollbar');
+                if (layerScrollbarElement) {
+                    var layersListElement = document.querySelector('.leaflet-control-layers-list');
+                    var originalHeight = layersListElement.style.height 
+                        || window.getComputedStyle(layersListElement).height;
+                    var newHeight = parseFloat(originalHeight) - 50;
+                    layersListElement.style.height = newHeight + 'px';
+                }
+            }
+            var isLayersListExpanded = true;
+            var controlLayersElement = document.querySelector('.leaflet-control-layers');
+            var toggleLayerControl = document.querySelector('.leaflet-control-layers-toggle');
+            // toggle Collapsed/Expanded and apply new Layers List height
+            toggleLayerControl.addEventListener('click', function() {
+                if (isLayersListExpanded) {
+                    controlLayersElement.classList.remove('leaflet-control-layers-expanded');
+                } else {
+                    controlLayersElement.classList.add('leaflet-control-layers-expanded');
+                }
+                isLayersListExpanded = !isLayersListExpanded;
+                newLayersListHeight()
+            });	
+			// apply new Layers List height if toggle layerstree
+			if (controlLayersElement) {
+				controlLayersElement.addEventListener('click', function(event) {
+					var toggleLayerHeaderPointer = event.target.closest('.leaflet-layerstree-header-pointer span');
+					if (toggleLayerHeaderPointer) {
+						newLayersListHeight();
+					}
+				});
+			}
+            // Collapsed/Expanded at Start to apply new height
+            setTimeout(function() {
+                toggleLayerControl.click();
+            }, 10);
+            setTimeout(function() {
+                toggleLayerControl.click();
+            }, 10);
+            // Collapsed touch/small screen
+            var isSmallScreen = window.innerWidth < 650;
+            if (isSmallScreen) {
+                setTimeout(function() {
+                    controlLayersElement.classList.remove('leaflet-control-layers-expanded');
+                    isLayersListExpanded = !isLayersListExpanded;
+                }, 500);
+            }  
+        });       
+        setBounds();
+        </script>        
+    </body>
+</html>
