@@ -20,22 +20,28 @@
             margin: 0;
         }
         #page-header {
-            height: 52px;
+            height: 44px;
             display: flex;
             align-items: center;
-            padding: 0 16px;
-            background: white;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 20px;
-            font-weight: 700;
+            padding: 6px 0 6px 12px;
+            background: transparent;
             box-sizing: border-box;
             position: relative;
             z-index: 1000;
         }
+        #page-header .title-chip {
+            display: inline-block;
+            background: white;
+            padding: 6px 14px;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 17px;
+            font-weight: 700;
+        }
         #map {
             width: 100%;
-            height: calc(100% - 52px);
+            height: calc(100% - 44px);
             padding: 0;
             margin: 0;
         }
@@ -43,7 +49,7 @@
         <title></title>
     </head>
     <body>
-        <div id="page-header">Le parc immobilier de bureaux en Région bruxelloise</div>
+        <div id="page-header"><span class="title-chip">Le parc immobilier de bureaux en Région bruxelloise</span></div>
         <div id="map">
         </div>
         <script src="js/qgis2web_expressions.js"></script>
@@ -72,7 +78,6 @@
         }).fitBounds([[50.828,4.330],[50.868,4.400]]);
         var hash = new L.Hash(map);
         map.attributionControl.setPrefix('<a href="https://github.com/qgis2web/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
-        map.attributionControl.addAttribution('Source des données : <a href="https://perspective.brussels" target="_blank">Observatoire des bureaux (perspective.brussels)</a> &middot; Cartographie : C. Dessouroux');
         var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
         // remove popup's row if "visible-with-data"
         function removeEmptyRowsFromPopupContent(content, feature) {
@@ -680,7 +685,6 @@
         map.addLayer(layer_Positronretina_0);
 
         var overlaysTree = [
-            {label: '<img src="legend/LignesbureauxEPSG4326_4_Ensemblesdebureaux0.png" /> Ensembles de bureaux', layer: layer_LignesbureauxEPSG4326_4},
             {label: 'Parc de bureaux en 2022/2023 et reconversions de bureaux autorisés entre 1997 et 2022', selectAllCheckbox: true, children: [
                 {label: 'Superficie de bureaux', selectAllCheckbox: true, children: [
                     {label: '<img src="legend/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_Bureauxbleus0.png" /> Stock', layer: layer_Cartebureaux_BureauxBleus},
@@ -694,6 +698,7 @@
                     {label: '<img src="legend/Cartebureaux2022_2023V2_poly_georef_centroidsEPSG4326_3_Reconversions19972022Autre3.png" /> Autre', layer: layer_Cartebureaux_ReconvAutre},
                 ]},
             ]},
+            {label: '<img src="legend/LignesbureauxEPSG4326_4_Ensemblesdebureaux0.png" /> Ensembles de bureaux', layer: layer_LignesbureauxEPSG4326_4},
             {label: '<img src="legend/LimitescommunalesRBC_2.png" /> Limites communales', layer: layer_LimitescommunalesRBC_2},]
         var lay = L.control.layers.tree(null, overlaysTree,{
             //namedToggle: true,
@@ -812,24 +817,22 @@
         // --- Bouton de géolocalisation (haut à gauche) ---
         var locateControl = L.control({position: 'topleft'});
         locateControl.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'locate-control');
-            div.style.background = 'white';
-            div.style.padding = '6px 10px';
-            div.style.borderRadius = '4px';
-            div.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
-            div.style.fontSize = '12px';
-            div.style.cursor = 'pointer';
-            div.style.userSelect = 'none';
-            div.textContent = '📍 Montre-moi où je suis';
-            L.DomEvent.disableClickPropagation(div);
+            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control locate-control');
+            var link = L.DomUtil.create('a', 'fas fa-crosshairs', container);
+            link.href = '#';
+            link.title = 'Montre-moi où je suis';
+            link.setAttribute('role', 'button');
+            link.setAttribute('aria-label', 'Montre-moi où je suis');
+            L.DomEvent.disableClickPropagation(container);
             var userMarker = null;
             var userCircle = null;
-            L.DomEvent.on(div, 'click', function () {
+            L.DomEvent.on(link, 'click', function (e) {
+                L.DomEvent.preventDefault(e);
                 if (!navigator.geolocation) {
                     alert("La géolocalisation n'est pas disponible sur cet appareil ou ce navigateur.");
                     return;
                 }
-                div.textContent = '⏳ Localisation en cours...';
+                L.DomUtil.addClass(link, 'fa-spin');
                 navigator.geolocation.getCurrentPosition(
                     function (pos) {
                         var latlng = [pos.coords.latitude, pos.coords.longitude];
@@ -838,16 +841,16 @@
                         if (userCircle) map.removeLayer(userCircle);
                         userMarker = L.circleMarker(latlng, {radius: 7, color: '#136AEC', weight: 2, fillColor: '#2A93EE', fillOpacity: 1}).addTo(map);
                         userCircle = L.circle(latlng, {radius: pos.coords.accuracy, color: '#136AEC', weight: 1, fillColor: '#136AEC', fillOpacity: 0.15}).addTo(map);
-                        div.textContent = '📍 Montre-moi où je suis';
+                        L.DomUtil.removeClass(link, 'fa-spin');
                     },
                     function (err) {
                         alert('Impossible de récupérer votre position : ' + err.message);
-                        div.textContent = '📍 Montre-moi où je suis';
+                        L.DomUtil.removeClass(link, 'fa-spin');
                     },
                     {enableHighAccuracy: true, timeout: 10000}
                 );
             });
-            return div;
+            return container;
         };
         locateControl.addTo(map);
 
