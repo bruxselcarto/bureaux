@@ -25,26 +25,8 @@
             padding: 0;
             margin: 0;
         }
-        .map-title-chip {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1001;
-            display: inline-block;
-            background: white;
-            padding: 6px 14px;
-            border-radius: 4px;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 17px;
-            font-weight: 700;
-        }
-        /* Pousse les contrôles Leaflet (zoom, mesure, localisation) sous le titre */
-        .leaflet-top.leaflet-left {
-            margin-top: 46px;
-        }
         /* Neutralise tout style de panneau hérité (qgis2web.css / leaflet-measure.css)
-           sur le conteneur qui regroupe les 3 boîtes en bas à gauche */
+           sur le conteneur qui regroupe les boîtes de légende */
         .legend-bottomleft-wrapper.leaflet-control {
             background: none !important;
             background-color: transparent !important;
@@ -60,76 +42,29 @@
             box-shadow: none !important;
         }
 
-        /* --- Mobile : tout est plus compact --- */
-        @media (max-width: 640px) {
-            .map-title-chip {
-                font-size: 12px !important;
-                padding: 4px 8px !important;
-                max-width: 62vw;
-                line-height: 1.25;
-                top: 6px !important;
-                left: 6px !important;
-            }
-            .leaflet-top.leaflet-left {
-                margin-top: 34px !important;
-            }
-            .legend-superficie {
-                font-size: 9px !important;
-                padding: 5px 6px !important;
-            }
-            .legend-superficie svg {
-                transform: scale(0.8);
-                transform-origin: left bottom;
-            }
-            .credit-control {
-                font-size: 7px !important;
-                max-width: 150px !important;
-                padding: 2px 5px !important;
-            }
-            .opacity-control-cartebureaux,
-            .scale-control-cartebureaux {
-                width: 130px !important;
-                font-size: 9px !important;
-                padding: 4px 6px !important;
-            }
-            .locate-control {
-                width: 30px;
-                height: 30px;
-            }
-            /* Le panneau de couches (bureaux, reconversions, fonds de carte) : police réduite
-               et largeur plafonnée pour éviter qu'il ne déborde de l'écran une fois déplié. */
-            .leaflet-control-layers {
-                font-size: 11px !important;
-                max-width: 78vw !important;
-            }
-            .leaflet-control-layers-expanded {
-                max-height: 55vh !important;
-                overflow-y: auto !important;
-            }
-        }
-        /* --- Panneau latéral rétractable (couches, légendes, curseurs) --- */
+        /* --- Tiroir remontant du bas (couches, légendes, curseurs) --- */
         #legend-sidebar {
             position: fixed;
-            top: 0;
             left: 0;
-            height: 100%;
-            width: 300px;
-            max-width: 85vw;
+            right: 0;
+            bottom: 0;
+            max-height: 75vh;
             background: white;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.3);
             z-index: 2000;
             overflow-y: auto;
-            transform: translateX(-100%);
-            transition: transform 0.25s ease;
-            padding: 14px 12px 20px 12px;
+            border-radius: 14px 14px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.28s ease;
+            padding: 10px 16px 24px 16px;
             box-sizing: border-box;
         }
         #legend-sidebar.open {
-            transform: translateX(0);
+            transform: translateY(0);
         }
         #legend-sidebar > .leaflet-control {
             position: static !important;
-            margin: 0 0 12px 0 !important;
+            margin: 0 0 16px 0 !important;
             float: none !important;
             width: fit-content;
         }
@@ -143,21 +78,108 @@
         #legend-sidebar-backdrop.show {
             display: block;
         }
+        #legend-sidebar-handle {
+            width: 40px;
+            height: 4px;
+            background: #ccc;
+            border-radius: 2px;
+            margin: 6px auto 10px auto;
+        }
         #legend-sidebar-close {
-            display: none;
+            position: absolute;
+            top: 10px;
+            right: 14px;
             width: 30px;
             height: 30px;
             line-height: 30px;
             text-align: center;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
-            margin-bottom: 8px;
+            color: #666;
         }
-        @media (max-width: 640px) {
-            #legend-sidebar-close {
-                display: block;
-            }
+        /* Contenu plus grand et plus espacé, pensé pour le doigt plutôt que la souris */
+        #legend-sidebar .legend-superficie,
+        #legend-sidebar .credit-control,
+        #legend-sidebar .opacity-control-cartebureaux,
+        #legend-sidebar .scale-control-cartebureaux {
+            font-size: 13px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+        }
+        #legend-sidebar .leaflet-control-layers {
+            font-size: 14px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+            line-height: 1.6;
+        }
+        #legend-sidebar input[type="checkbox"],
+        #legend-sidebar input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+        #legend-sidebar input[type="range"] {
+            height: 24px;
+        }
+
+        /* --- Boutons d'action flottants (bas à droite) --- */
+        .fab-stack {
+            position: fixed;
+            right: 14px;
+            bottom: 20px;
+            z-index: 1500;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        .fab-button {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #333;
+            cursor: pointer;
+            user-select: none;
+        }
+        .fab-button.fab-primary {
+            background: #2A6FDB;
+            color: white;
+        }
+
+        /* Titre compact, discret, en haut à gauche */
+        .map-title-chip {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1001;
+            display: inline-block;
+            background: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            max-width: 60vw;
+            line-height: 1.25;
+        }
+
+        /* Sur cette version mobile, on masque les contrôles Leaflet destinés au bureau
+           (mesure de distance/surface, positionnés en haut à gauche : pas assez de place,
+           et peu pertinent en usage tactile) */
+        .leaflet-control-measure,
+        .leaflet-control-zoom {
+            display: none !important;
         }
         </style>
         <title></title>
@@ -165,10 +187,15 @@
     <body>
         <div id="legend-sidebar-backdrop"></div>
         <div id="legend-sidebar">
-            <div id="legend-sidebar-close">✕ Fermer</div>
+            <div id="legend-sidebar-handle"></div>
+            <div id="legend-sidebar-close">✕</div>
         </div>
         <div id="map">
             <div class="map-title-chip">Le parc immobilier de bureaux en Région bruxelloise</div>
+        </div>
+        <div class="fab-stack">
+            <div class="fab-button" id="fab-locate" title="Montre-moi où je suis" role="button" aria-label="Montre-moi où je suis"><i id="fab-locate-icon" class="fas fa-crosshairs"></i></div>
+            <div class="fab-button fab-primary" id="fab-layers" title="Couches, légende et réglages" role="button" aria-label="Couches, légende et réglages"><i class="fas fa-layer-group"></i></div>
         </div>
         <script src="js/qgis2web_expressions.js"></script>
         <script src="js/leaflet.js"></script>
@@ -934,63 +961,35 @@
         map.on('zoomend moveend', updateProportionalLegends);
         map.whenReady(updateProportionalLegends);
 
-        // --- Bouton de géolocalisation (haut à gauche) ---
-        var locateControl = L.control({position: 'topleft'});
-        locateControl.onAdd = function (map) {
-            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control locate-control');
-            var link = L.DomUtil.create('a', 'fas fa-crosshairs', container);
-            link.href = '#';
-            link.title = 'Montre-moi où je suis';
-            link.setAttribute('role', 'button');
-            link.setAttribute('aria-label', 'Montre-moi où je suis');
-            L.DomEvent.disableClickPropagation(container);
-            var userMarker = null;
-            var userCircle = null;
-            L.DomEvent.on(link, 'click', function (e) {
-                L.DomEvent.preventDefault(e);
-                if (!navigator.geolocation) {
-                    alert("La géolocalisation n'est pas disponible sur cet appareil ou ce navigateur.");
-                    return;
-                }
-                L.DomUtil.addClass(link, 'fa-spin');
-                navigator.geolocation.getCurrentPosition(
-                    function (pos) {
-                        var latlng = [pos.coords.latitude, pos.coords.longitude];
-                        map.setView(latlng, 16);
-                        if (userMarker) map.removeLayer(userMarker);
-                        if (userCircle) map.removeLayer(userCircle);
-                        userMarker = L.circleMarker(latlng, {radius: 7, color: '#136AEC', weight: 2, fillColor: '#2A93EE', fillOpacity: 1}).addTo(map);
-                        userCircle = L.circle(latlng, {radius: pos.coords.accuracy, color: '#136AEC', weight: 1, fillColor: '#136AEC', fillOpacity: 0.15}).addTo(map);
-                        L.DomUtil.removeClass(link, 'fa-spin');
-                    },
-                    function (err) {
-                        alert('Impossible de récupérer votre position : ' + err.message);
-                        L.DomUtil.removeClass(link, 'fa-spin');
-                    },
-                    {enableHighAccuracy: true, timeout: 10000}
-                );
-            });
-            return container;
-        };
-        locateControl.addTo(map);
-
-        // --- Bouton d'ouverture du panneau latéral (couches, légendes, curseurs) ---
-        var sidebarToggleControl = L.control({position: 'topleft'});
-        sidebarToggleControl.onAdd = function (map) {
-            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control sidebar-toggle-control');
-            var link = L.DomUtil.create('a', 'fas fa-layer-group', container);
-            link.href = '#';
-            link.title = 'Couches, légende et réglages';
-            link.setAttribute('role', 'button');
-            link.setAttribute('aria-label', 'Couches, légende et réglages');
-            L.DomEvent.disableClickPropagation(container);
-            L.DomEvent.on(link, 'click', function (e) {
-                L.DomEvent.preventDefault(e);
-                openSidebar();
-            });
-            return container;
-        };
-        sidebarToggleControl.addTo(map);
+        // --- Boutons d'action flottants (bas à droite) : localisation + couches/légende ---
+        var userMarker = null;
+        var userCircle = null;
+        function handleLocateClick() {
+            if (!navigator.geolocation) {
+                alert("La géolocalisation n'est pas disponible sur cet appareil ou ce navigateur.");
+                return;
+            }
+            var icon = document.getElementById('fab-locate-icon');
+            icon.classList.add('fa-spin');
+            navigator.geolocation.getCurrentPosition(
+                function (pos) {
+                    var latlng = [pos.coords.latitude, pos.coords.longitude];
+                    map.setView(latlng, 16);
+                    if (userMarker) map.removeLayer(userMarker);
+                    if (userCircle) map.removeLayer(userCircle);
+                    userMarker = L.circleMarker(latlng, {radius: 7, color: '#136AEC', weight: 2, fillColor: '#2A93EE', fillOpacity: 1}).addTo(map);
+                    userCircle = L.circle(latlng, {radius: pos.coords.accuracy, color: '#136AEC', weight: 1, fillColor: '#136AEC', fillOpacity: 0.15}).addTo(map);
+                    icon.classList.remove('fa-spin');
+                },
+                function (err) {
+                    alert('Impossible de récupérer votre position : ' + err.message);
+                    icon.classList.remove('fa-spin');
+                },
+                {enableHighAccuracy: true, timeout: 10000}
+            );
+        }
+        document.getElementById('fab-locate').addEventListener('click', handleLocateClick);
+        document.getElementById('fab-layers').addEventListener('click', function () { openSidebar(); });
 
         var sidebarEl = document.getElementById('legend-sidebar');
         var backdropEl = document.getElementById('legend-sidebar-backdrop');
@@ -1003,12 +1002,9 @@
             backdropEl.classList.remove('show');
         }
         document.getElementById('legend-sidebar-close').addEventListener('click', closeSidebar);
+        document.getElementById('legend-sidebar-handle').addEventListener('click', closeSidebar);
         backdropEl.addEventListener('click', closeSidebar);
-
-        // Ouvert par défaut sur ordinateur, fermé par défaut sur téléphone
-        if (!window.matchMedia('(max-width: 640px)').matches) {
-            openSidebar();
-        }
+        // Fermé par défaut : l'utilisateur ouvre le tiroir via le bouton flottant.
 
 
         // --- Curseur de transparence pour les couches "Carte bureaux 2022_2023" ---
