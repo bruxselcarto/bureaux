@@ -107,10 +107,66 @@
                 overflow-y: auto !important;
             }
         }
+        /* --- Panneau latéral rétractable (couches, légendes, curseurs) --- */
+        #legend-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 300px;
+            max-width: 85vw;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            z-index: 2000;
+            overflow-y: auto;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease;
+            padding: 14px 12px 20px 12px;
+            box-sizing: border-box;
+        }
+        #legend-sidebar.open {
+            transform: translateX(0);
+        }
+        #legend-sidebar > .leaflet-control {
+            position: static !important;
+            margin: 0 0 12px 0 !important;
+            float: none !important;
+            width: fit-content;
+        }
+        #legend-sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            z-index: 1999;
+        }
+        #legend-sidebar-backdrop.show {
+            display: block;
+        }
+        #legend-sidebar-close {
+            display: none;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        @media (max-width: 640px) {
+            #legend-sidebar-close {
+                display: block;
+            }
+        }
         </style>
         <title></title>
     </head>
     <body>
+        <div id="legend-sidebar-backdrop"></div>
+        <div id="legend-sidebar">
+            <div id="legend-sidebar-close">✕ Fermer</div>
+        </div>
         <div id="map">
             <div class="map-title-chip">Le parc immobilier de bureaux en Région bruxelloise</div>
         </div>
@@ -762,10 +818,6 @@
             ]},
             {label: '<img src="legend/LignesbureauxEPSG4326_4_Ensemblesdebureaux0.png" /> Ensembles de bureaux', layer: layer_LignesbureauxEPSG4326_4},
             {label: '<img src="legend/LimitescommunalesRBC_2.png" /> Limites communales', layer: layer_LimitescommunalesRBC_2},]
-        // Sur petit écran, on replie les panneaux de couches par défaut (l'espace vertical
-        // est très limité sur téléphone) ; l'utilisateur les déplie d'un tap si besoin.
-        var isMobileScreen = window.matchMedia('(max-width: 640px)').matches;
-
         var lay = L.control.layers.tree(null, overlaysTree,{
             //namedToggle: true,
             //selectorBack: false,
@@ -773,17 +825,19 @@
             //openedSymbol: '&#8863; &#x1f5c1;',
             //collapseAll: 'Collapse all',
             //expandAll: 'Expand all',
-            collapsed: isMobileScreen, 
+            collapsed: false, 
         });
         lay.addTo(map);
+        document.getElementById('legend-sidebar').appendChild(lay.getContainer());
 
         // Sélecteur de fonds de carte, ajouté APRÈS le contrôle de couches ci-dessus :
-        // comme les deux contrôles partagent la même position, Leaflet les empile dans
-        // l'ordre d'ajout, donc celui-ci apparaît en dessous (= "fonds de carte en fin de légende").
+        // comme les deux contrôles partagent le même panneau, il apparaît en dessous
+        // (= "fonds de carte en fin de légende").
         var layBase = L.control.layers.tree(baseTree, null, {
-            collapsed: isMobileScreen,
+            collapsed: false,
         });
         layBase.addTo(map);
+        document.getElementById('legend-sidebar').appendChild(layBase.getContainer());
 
         // --- Légendes à cercles proportionnels (échelle géographique réelle) ---
         // Les cercles sont dessinés en mètres sur le terrain (aire = Superficie),
@@ -868,6 +922,7 @@
             return wrapper;
         };
         legendBottomLeft.addTo(map);
+        document.getElementById('legend-sidebar').appendChild(legendBottomLeft.getContainer());
 
         function updateProportionalLegends() {
             var mpp = metersPerPixelAt(map);
@@ -919,6 +974,42 @@
         };
         locateControl.addTo(map);
 
+        // --- Bouton d'ouverture du panneau latéral (couches, légendes, curseurs) ---
+        var sidebarToggleControl = L.control({position: 'topleft'});
+        sidebarToggleControl.onAdd = function (map) {
+            var container = L.DomUtil.create('div', 'leaflet-bar leaflet-control sidebar-toggle-control');
+            var link = L.DomUtil.create('a', 'fas fa-layer-group', container);
+            link.href = '#';
+            link.title = 'Couches, légende et réglages';
+            link.setAttribute('role', 'button');
+            link.setAttribute('aria-label', 'Couches, légende et réglages');
+            L.DomEvent.disableClickPropagation(container);
+            L.DomEvent.on(link, 'click', function (e) {
+                L.DomEvent.preventDefault(e);
+                openSidebar();
+            });
+            return container;
+        };
+        sidebarToggleControl.addTo(map);
+
+        var sidebarEl = document.getElementById('legend-sidebar');
+        var backdropEl = document.getElementById('legend-sidebar-backdrop');
+        function openSidebar() {
+            sidebarEl.classList.add('open');
+            backdropEl.classList.add('show');
+        }
+        function closeSidebar() {
+            sidebarEl.classList.remove('open');
+            backdropEl.classList.remove('show');
+        }
+        document.getElementById('legend-sidebar-close').addEventListener('click', closeSidebar);
+        backdropEl.addEventListener('click', closeSidebar);
+
+        // Ouvert par défaut sur ordinateur, fermé par défaut sur téléphone
+        if (!window.matchMedia('(max-width: 640px)').matches) {
+            openSidebar();
+        }
+
 
         // --- Curseur de transparence pour les couches "Carte bureaux 2022_2023" ---
         var opacityControl = L.control({position: 'bottomright'});
@@ -939,6 +1030,7 @@
             return div;
         };
         opacityControl.addTo(map);
+        document.getElementById('legend-sidebar').appendChild(opacityControl.getContainer());
 
         document.getElementById('opacitySliderCartebureaux').addEventListener('input', function (e) {
             circleOpacity = parseInt(e.target.value, 10) / 100;
@@ -969,6 +1061,7 @@
             return div;
         };
         scaleControl.addTo(map);
+        document.getElementById('legend-sidebar').appendChild(scaleControl.getContainer());
 
         // Régénère complètement les cercles à partir des données sources : plus fiable qu'une
         // simple mutation de rayon (setRadius peut ne pas se répercuter visuellement selon le
