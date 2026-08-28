@@ -43,6 +43,22 @@
         .leaflet-top.leaflet-left {
             margin-top: 46px;
         }
+        /* Neutralise tout style de panneau hérité (qgis2web.css / leaflet-measure.css)
+           sur le conteneur qui regroupe les 3 boîtes en bas à gauche */
+        .legend-bottomleft-wrapper.leaflet-control {
+            background: none !important;
+            background-color: transparent !important;
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .leaflet-bottom.leaflet-left {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
         </style>
         <title></title>
     </head>
