@@ -13,9 +13,29 @@
         <link rel="stylesheet" href="css/leaflet.photon.css">
         <link rel="stylesheet" href="css/leaflet-measure.css">
         <style>
-        html, body, #map {
+        html, body {
             width: 100%;
             height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        #page-header {
+            height: 52px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            background: white;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 1000;
+        }
+        #map {
+            width: 100%;
+            height: calc(100% - 52px);
             padding: 0;
             margin: 0;
         }
@@ -23,6 +43,7 @@
         <title></title>
     </head>
     <body>
+        <div id="page-header">Le parc immobilier de bureaux en Région bruxelloise</div>
         <div id="map">
         </div>
         <script src="js/qgis2web_expressions.js"></script>
@@ -762,6 +783,22 @@
         };
         legendReconv.addTo(map);
 
+        // --- Crédit (source des données / cartographie), juste sous les légendes ---
+        var creditControl = L.control({position: 'bottomleft'});
+        creditControl.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'credit-control');
+            div.style.background = 'rgba(255,255,255,0.85)';
+            div.style.padding = '3px 8px';
+            div.style.borderRadius = '3px';
+            div.style.fontSize = '10px';
+            div.style.color = '#444';
+            div.style.marginTop = '4px';
+            div.innerHTML = 'Source des données : <a href="https://perspective.brussels" target="_blank" style="color:#444;">Observatoire des bureaux (perspective.brussels)</a> &middot; Cartographie : C. Dessouroux';
+            L.DomEvent.disableClickPropagation(div);
+            return div;
+        };
+        creditControl.addTo(map);
+
         function updateProportionalLegends() {
             var mpp = metersPerPixelAt(map);
             var bureauxDiv = document.querySelector('.legend-bureaux');
@@ -772,25 +809,7 @@
         map.on('zoomend moveend', updateProportionalLegends);
         map.whenReady(updateProportionalLegends);
 
-        // --- Titre de la carte (haut à gauche) ---
-        var titleControl = L.control({position: 'topleft'});
-        titleControl.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'map-title');
-            div.style.background = 'white';
-            div.style.padding = '8px 12px';
-            div.style.borderRadius = '4px';
-            div.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
-            div.style.fontSize = '14px';
-            div.style.fontWeight = '700';
-            div.style.maxWidth = '260px';
-            div.style.lineHeight = '1.3';
-            div.innerHTML = 'Le parc immobilier de bureaux en Région bruxelloise';
-            L.DomEvent.disableClickPropagation(div);
-            return div;
-        };
-        titleControl.addTo(map);
-
-        // --- Bouton de géolocalisation (haut à gauche, sous le titre) ---
+        // --- Bouton de géolocalisation (haut à gauche) ---
         var locateControl = L.control({position: 'topleft'});
         locateControl.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'locate-control');
@@ -832,21 +851,6 @@
         };
         locateControl.addTo(map);
 
-        // --- Crédit (source des données / cartographie), discret, garanti visible ---
-        var creditControl = L.control({position: 'bottomleft'});
-        creditControl.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'credit-control');
-            div.style.background = 'rgba(255,255,255,0.85)';
-            div.style.padding = '3px 8px';
-            div.style.borderRadius = '3px';
-            div.style.fontSize = '10px';
-            div.style.color = '#444';
-            div.style.marginTop = '4px';
-            div.innerHTML = 'Source des données : <a href="https://perspective.brussels" target="_blank" style="color:#444;">Observatoire des bureaux (perspective.brussels)</a> &middot; Cartographie : C. Dessouroux';
-            L.DomEvent.disableClickPropagation(div);
-            return div;
-        };
-        creditControl.addTo(map);
 
         // --- Curseur de transparence pour les couches "Carte bureaux 2022_2023" ---
         var opacityControl = L.control({position: 'bottomright'});
