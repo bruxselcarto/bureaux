@@ -769,6 +769,7 @@
             bureauxDiv.style.fontSize = '11px';
             bureauxDiv.style.lineHeight = '1.3';
             bureauxDiv.style.marginBottom = '6px';
+            bureauxDiv.style.width = 'fit-content';
 
             var reconvDiv = L.DomUtil.create('div', 'legend-superficie legend-reconv', wrapper);
             reconvDiv.style.background = 'white';
@@ -777,6 +778,7 @@
             reconvDiv.style.boxShadow = '0 1px 4px rgba(0,0,0,0.4)';
             reconvDiv.style.fontSize = '11px';
             reconvDiv.style.lineHeight = '1.3';
+            reconvDiv.style.width = 'fit-content';
 
             var creditDiv = L.DomUtil.create('div', 'credit-control', wrapper);
             creditDiv.style.background = 'rgba(255,255,255,0.85)';
@@ -785,6 +787,8 @@
             creditDiv.style.fontSize = '10px';
             creditDiv.style.color = '#444';
             creditDiv.style.marginTop = '6px';
+            creditDiv.style.width = 'fit-content';
+            creditDiv.style.maxWidth = '260px';
             creditDiv.innerHTML = 'Source des données : <a href="https://perspective.brussels" target="_blank" style="color:#444;">Observatoire des bureaux (perspective.brussels)</a> &middot; Cartographie : C. Dessouroux';
 
             L.DomEvent.disableClickPropagation(wrapper);
