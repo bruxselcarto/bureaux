@@ -760,6 +760,11 @@
         var legendBottomLeft = L.control({position: 'bottomleft'});
         legendBottomLeft.onAdd = function (map) {
             var wrapper = L.DomUtil.create('div', 'legend-bottomleft-wrapper');
+            wrapper.style.background = 'none';
+            wrapper.style.border = 'none';
+            wrapper.style.boxShadow = 'none';
+            wrapper.style.padding = '0';
+            wrapper.style.margin = '0';
 
             var bureauxDiv = L.DomUtil.create('div', 'legend-superficie legend-bureaux', wrapper);
             bureauxDiv.style.background = 'white';
